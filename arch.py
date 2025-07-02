@@ -857,26 +857,34 @@ def sauvegarder_fiche():
                 "vitale": vitale
             })
 
+try:
+    # ... traitement des fragments ...
+    memo_r = {"fragments": []}
+    for fragment in matrice_cognitive:
+        # ...
+        memo_r["fragments"].append({...})
+
+except Exception as e:
+    print("Erreur lors de la construction de la mémoire raisonnée :", e)
+    return jsonify({"erreur": str(e)}), 500
+
+# Partie hors du try : traitement du titre
 # 1. On part du titre manuel si présent (prioritaire)
-    titre_utilisateur = titre.strip()
+titre_utilisateur = titre.strip()
 
 # 2. Sinon on prend le titre généré par GPT‑4o
-    titre_final = titre_utilisateur or titre_fiche
+titre_final = titre_utilisateur or titre_fiche
 
 # 3. Débogage doublons éventuels (suffixes : (2), (3)...)
-    titres_existants = [f.get("nommage_fiche", "") for f in fiches if isinstance(f, dict)]
+titres_existants = [f.get("nommage_fiche", "") for f in fiches if isinstance(f, dict)]
 
-    suffixe = ""
-    n = 2
-    while titre_final + suffixe in titres_existants:
-            suffixe = f" ({n})"
-            n += 1
-
-    nommage_fiche = titre_final + suffixe
+suffixe = ""
+n = 2
+while titre_final + suffixe in titres_existants:
+    suffixe = f" ({n})"
+    n += 1
+nommage_fiche = titre_final + suffixe
     memo_r["fragments"].append({...})
-
-
-
         fiche = {
             "title": titre,
             "nommage_fiche": nommage_fiche,
