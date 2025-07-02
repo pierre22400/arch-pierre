@@ -1,4 +1,5 @@
-# requirements.txt
 Flask==2.3.2
 openai==0.27.7
 requests==2.31.0
+yake==0.4.8
+spacy==3.5.0
