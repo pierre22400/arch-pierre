@@ -1,0 +1,1033 @@
+
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<title>Interface ARCH</title>
+<style>
+
+.bouton-matrice {
+  margin-top: 5px;
+  padding: 4px 8px;
+  background-color: #e6f0ff;
+  border: 1px solid #89a;
+  font-size: 0.9em;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.fiche-carnet {
+  margin-bottom: 10px;
+  padding: 12px;
+  border-left: 4px solid #3b8adb;
+  background-color: #f8f8f8;
+  border-radius: 4px;
+}
+
+body {
+      font-family: Arial, sans-serif;
+      background-color: #f9f9f9;
+      color: #333;
+      margin: 20px;
+    }
+
+button, input, select {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 15px;
+}
+div, span, p {
+  line-height: 1.6;
+}
+
+#bandeau {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 220px;
+  height: 100%;
+  background-color: #2c3e50;
+  padding: 20px 10px;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+  color: white;
+  z-index: 999;
+}
+
+#bandeau h2 {
+  font-size: 18px;
+  color: #ecf0f1;
+  text-align: center;
+  margin-bottom: 20px;
+}
+#bandeau button {
+  display: block;
+  width: 100%;
+  margin: 10px 0;
+  padding: 8px;
+  border: none;
+  background-color: #34495e;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+#bandeau button:hover {
+  background-color: #1abc9c;
+}
+#contenu {
+  margin-left: 240px;
+  padding: 20px;
+}
+#chatPrompt {
+  position: fixed;
+  bottom: 0;
+  left: 240px;
+  right: 0;
+  background: #ecf0f1;
+  padding: 10px;
+  border-top: 1px solid #bdc3c7;
+}
+#chatPrompt input {
+  width: 95%;
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+}
+</style>
+<style>
+.compact #tableMemoire td:nth-child(4) { display: none; }
+.compact #tableMemoire td { padding: 2px 6px; font-size: 0.9em; }
+
+.statut-actif { background-color: #f1948a; }
+.statut-moribond { background-color: #f9e79f; }
+.statut-obsolète { background-color: #f2f3f4; }
+.tag-manuel {
+  display: inline-block;
+  background-color: #fdfd96; /* jaune clair */
+  color: #333;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin: 2px;
+  font-size: 0.85em;
+}
+
+.tag-systeme {
+  display: inline-block;
+  background-color: #b3e5fc; /* bleu clair */
+  color: #333;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin: 2px;
+  font-size: 0.85em;
+}
+    
+    .bloc {
+      background-color: white;
+      padding: 20px;
+      margin-bottom: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    label {
+      font-weight: bold;
+    }
+    input, select, button {
+      margin-top: 5px;
+      padding: 6px;
+      width: 100%;
+      margin-bottom: 15px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #1976d2;
+      color: white;
+      font-weight: bold;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      padding: 8px;
+      border: 1px solid #aaa;
+      text-align: left;
+    }
+    th {
+      background-color: #eee;
+    }
+  </style>
+</head>
+<body>
+<div id="bandeau">
+<h2>🔧 ARCH</h2>
+<button onclick="toggleBandeau()" style="margin-bottom: 10px;">↔️ Réduire</button>
+<button onclick="scrollToElement('filtreTexte')">🔍 Recherche</button>
+<button onclick="scrollToElement('tableMemoire')">📄 Mémoire</button>
+<button onclick="scrollToElement('grapheContainer')">📈 Graphe</button>
+<button onclick="afficherHistoriqueComplet()">📜 Historique</button>
+<div id="saisieTrame" style="margin-top:20px; padding:10px; border:1px solid #ccc; border-radius:8px;">
+  <label for="intentionTrame" style="font-weight:bold;">🎯 Quelle est ton intention ou question heuristique ?</label><br>
+  <textarea id="intentionTrame" rows="2" style="width:100%; margin-top:8px;" placeholder="Tape ici ton intention..."></textarea>
+  <button onclick="genererTrame()" style="margin-top:10px;">🧵 Générer Trame</button>
+</div>
+
+<div id="zonePrompt" style="display:none; margin-top:20px;">
+  <h3>🧠 Prompt BBGPT</h3>
+  <textarea id="textePrompt" rows="15" cols="100" readonly style="width:100%; font-family:monospace;"></textarea>
+
+</div>
+
+<div id="etatServeur" style="margin-top: 20px; font-size: 0.9em;">🔄 Vérification serveur...</div>
+</div>
+<button id="boutonReapparaitre"
+  onclick="toggleBandeau()"
+  style="display:none; position:fixed; left:10px; top:10px; z-index:1001; background:#34495e; color:white; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;">
+  ⇨ restaurer le bandeau
+</button>
+<div id="contenu">
+<div id="contenu">
+
+<!-- 📁 Bloc dynamique de sélection des fiches ARCH -->
+<section id="selection-fiches" style="margin: 20px; padding: 10px; border: 1px solid #ccc;">
+  <h3>🗂️ Sélectionner des fiches ARCH pour analyse de tension</h3>
+  <div id="liste-fiches">⏳ Chargement des fiches…</div>
+</section>
+
+<!-- 🔘 Bouton pour lancer l'analyse -->
+<button id="btnDetecterTension">🔍 Détecter tension entre fiches</button>
+
+</section>
+
+<h1><div style="text-align:center;font-size:2em;font-weight:bold;">ARCH</div></h1>
+<div class="bloc">
+<h2>🔍 Lecture de tiddler</h2>
+<label for="nomTiddler">Nom du tiddler</label>
+<input id="nomTiddler" onkeypress="if(event.key === 'Enter'){envoyerMessage();}" placeholder="ENTREE_ARCH" type="text"/>
+<button onclick="lireTiddler()">Lire tiddler</button>
+<pre id="resultatLecture"></pre>
+<button onclick="analyserTiddler()">Analyser le tiddler</button>
+</div>
+<div class="bloc">
+  <h2>🛠️ Générer un tiddler JSON</h2>
+  <label for="titreTiddler">Titre du tiddler</label>
+  <input id="titreTiddler" type="text" placeholder="Titre du tiddler" />
+
+  <label for="texteTiddler">Texte brut</label>
+  <textarea id="texteTiddler" rows="8" placeholder="Colle ici ton texte brut..."></textarea>
+
+  <button onclick="genererTiddlerJSON()">Créer tiddler JSON</button>
+  <pre id="resultatJSON"></pre>
+</div>
+
+<div class="bloc" id="fluxMomentsFiges">
+
+  <h2> Carnet de bord </h2>
+<!-- 🔍 Champ de création de trame heuristique -->
+  <div id="zoneCarnet" style="max-height: 500px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; background: white;"></div>
+<!-- Saisie intégrée dans le flux, tout en bas -->
+<div style="border-top: 1px solid #ccc; padding-top: 20px; margin-top: 20px;">
+  <div style="font-size: 0.9em; color: #555;">✍️ Ajouter une note :</div>
+  <textarea id="texteFiche" rows="4" style="width:100%; margin-top:5px;" placeholder="Écris ici ta note, puis appuie sur Entrée..." onkeydown="if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sauvegarderFicheARCH(); }"></textarea>
+  <input type="text" id="referenceInput" placeholder="Référence (facultatif)" style="width:100%; margin-top:5px;">
+  <input type="text" id="tagsManuels" placeholder="Tags séparés par virgule" style="width:100%; margin-top:5px;">
+  <button id="btnEnregistrer" onclick="sauvegarderFicheARCH()" style="margin-top:5px;">💾 Enregistrer</button>
+  <span id="confirmationSaisie" style="margin-left: 10px; color: green;"></span>
+</div>
+<h3>🧠 Matrice cognitive générée</h3>
+<pre id="affichage_matrice" style="white-space: pre-wrap; background: #f4f4f4; padding: 10px; border-radius: 6px; border: 1px solid #ccc;"></pre>
+<!-- Zone de test balisage avancé -->
+<div style="margin-top:30px;">
+  <label for="texteTestBalises">🧠 Texte à tester pour balises avancées :</label>
+  <textarea id="texteTestBalises" rows="4" style="width:100%; margin-top:5px;" placeholder="Colle ici un texte à baliser..."></textarea>
+  <button onclick="testerBalisesAvance()" style="margin-top:10px; background:#005; color:#00FFFF;">
+    🧠 Tester balisage avancé
+  </button>
+  <pre id="résultatBalisesAvance" style="background:#f0f0f0; padding:10px; margin-top:10px; max-height:200px; overflow:auto;"></pre>
+<button onclick="consoliderBalisesARCH()">🔁 Consolider les balises</button>
+</div>
+
+<div id="tableauMatrice" style="margin-top: 30px; display: none;">
+  <h2>🧠 Matrice cognitive multistrate</h2>
+  <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse; width: 100%; font-size: 0.95em;">
+    <thead style="background-color: #f0f0f0;">
+      <tr>
+        <th>ID</th>
+        <th>Fragment</th>
+        <th>tags_lexicaux</th>
+        <th>noms_propres</th>
+        <th>verbes</th>
+        <th>🟠 struct.</th>
+        <th>🔵 concept.</th>
+        <th>🟣 réf.</th>
+        <th>🔴 vitale</th>
+        <th>tag_manuels_fiche</th>
+      </tr>
+    </thead>
+    <tbody id="contenuMatrice"></tbody>
+  </table>
+</div>
+
+<div class="bloc">
+<h2>🛠️ Mise à jour mémoire</h2>
+<label>Nom du fichier</label>
+<input id="nomFichier" onkeypress="if(event.key === 'Enter'){envoyerMessage();}" type="text"/>
+<label>Vitalité (0.0 à 1.0)</label>
+<input id="vitalite" max="1" min="0" step="0.1" type="number"/>
+<label>Statut</label>
+<select id="statut">
+<option value="">(inchangé)</option>
+<option value="actif">actif</option>
+<option value="moribond">moribond</option>
+<option value="obsolète">obsolète</option>
+<option value="artefact">artefact</option>
+</select>
+<button onclick="mettreAJourMemoire()">Mettre à jour</button>
+<pre id="resultatMaj"></pre>
+</div>
+<div class="bloc">
+<h2>📂 Consultation mémoire</h2>
+<div class="bloc">
+  <h2>🏷️ Balises ARCH</h2>
+  <button onclick="auditerBalises()">📊 Audit lexical</button>
+   <pre id="resultatBalises"></pre>
+</div>
+
+<button onclick="listerMemoire()">Afficher les fichiers mémoire</button>
+<button onclick="exporterListe()">📤 Exporter liste filtrée</button>
+<button onclick="resetFiltres()">❌ Réinitialiser filtres</button>
+<p id="filtreActuelMemoire" style="font-weight:bold; margin-bottom:10px;"></p>
+<table id="tableMemoire" style="display:none;">
+<thead>
+<tr>
+<th>Nom</th>
+<th>Statut</th>
+<th>Vitalité</th>
+<th>Tags</th>
+<th>Extrait</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+<div>
+<h3>🔍 Options</h3>
+<div style="margin: 10px 0;">
+<button onclick="toggleAffichage()">🔳 Affichage compact / détaillé</button>
+</div>
+
+<h4>🎨 Personnaliser les couleurs</h4>
+<label>Actif : <input id="couleurActif" type="color" value="#f1948a"/></label>
+<label>Moribond : <input id="couleurMoribond" type="color" value="#f9e79f"/></label>
+<label>Obsolète : <input id="couleurObsolete" type="color" value="#f2f3f4"/></label>
+<button onclick="appliquerCouleurs()">Appliquer</button>
+<div id="command-interface" style="margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 6px;">
+  <h4 style="margin-bottom: 8px;">🗨️ Commande ARCH</h4>
+  <input type="text" id="commande-input" placeholder="Ex : ouvre MANIFESTE_BBGPT" style="width: 100%; padding: 6px;">
+  <button onclick="envoyerCommandeARCH()" style="margin-top: 5px; width: 100%;">Exécuter</button>
+  <div id="commande-resultat" style="margin-top: 10px; font-size: 0.9em; color: #555;"></div>
+</div>
+</div>
+<p id="filtreActif" style="font-weight:bold; color:#333;"></p>
+<button onclick="trierMemoireParNom()">Trier par nom</button>
+<input id="filtreTexte" oninput="filtrerParTexte()" onkeypress="if(event.key === 'Enter'){envoyerMessage();}" placeholder="Recherche texte..." type="text"/>
+<label>Filtrer par statut :
+    <select id="filtreStatut" onchange="filtrerParStatut()">
+<option value="">(tous)</option>
+<option value="actif">actif</option>
+<option value="moribond">moribond</option>
+<option value="obsolète">obsolète</option>
+<option value="artefact">artefact</option>
+</select>
+</label>
+</div>
+
+<div class="bloc">
+<h2>🧭 Pilotage ARCH</h2>
+<p>Phase actuelle : <span id="phaseActuelle">–</span></p>
+<label for="selectPhase">Choisir une phase :</label>
+<select id="selectPhase">
+<option value="phase1">Phase 1 - Initialisation</option>
+<option value="phase2">Phase 2 - Exploration</option>
+<option value="phase3">Phase 3 - Résolution</option>
+<option value="phase4">Phase 4 - Synthèse</option>
+</select>
+<button onclick="lancerPhase()">Activer la phase</button>
+<button onclick="afficherCheminHeuristique()">🧠 Lancer BBGPT (heuristique)</button>
+<button onclick="afficherPromptHeuristique()">📋 Voir prompt BBGPT</button>
+<pre id="etatPhase"></pre>
+</div>
+
+<div class="bloc">
+<h2>🎨 Légende des statuts</h2>
+<ul id="filtreStatuts" style="list-style: none; padding-left: 0;">
+<li onclick="filtrerStatut('actif')" style="background:#f1948a; padding:6px; border-radius:4px; margin-bottom:4px; cursor:pointer;">🔴 Actif</li>
+<li onclick="filtrerStatut('moribond')" style="background:#f9e79f; padding:6px; border-radius:4px; margin-bottom:4px; cursor:pointer;">🟡 Moribond</li>
+<li onclick="filtrerStatut('obsolète')" style="background:#f2f3f4; padding:6px; border-radius:4px; margin-bottom:4px; cursor:pointer;">⚫ Obsolète</li>
+<li onclick="filtrerStatut(null)" style="background:#eaecee; padding:6px; border-radius:4px; margin-bottom:4px; cursor:pointer;">🔁 Tout afficher</li>
+</ul>
+</div>
+
+<div class="bloc">
+<h2>🔥 Objets mémoire prioritaires</h2>
+<button onclick="chargerPrioritaires()">Afficher les plus actifs</button>
+<ul id="listePrioritaires"></ul>
+</div>
+<div class="bloc">
+<h2>♻️ Mise à jour bayésienne des vitalités</h2>
+<button onclick="ajusterVitalites()">Ajuster toutes les vitalités</button>
+<p id="resultatBayes"></p>
+</div>
+</div></div>
+<script>
+
+function verifierEtatServeur() {
+  fetch("http://localhost:5000/ping")
+    .then(res => {
+      if (res.ok) {
+        document.getElementById("etatServeur").innerHTML = "🟢 ARCH actif";
+      } else {
+        document.getElementById("etatServeur").innerHTML = "🔴 ARCH injoignable";
+      }
+    })
+    .catch(() => {
+      document.getElementById("etatServeur").innerHTML = "🔴 ARCH injoignable";
+    });
+}
+setInterval(verifierEtatServeur, 10000);
+verifierEtatServeur();
+
+function appliquerCouleurs() {
+  const actif = document.getElementById("couleurActif").value;
+  const moribond = document.getElementById("couleurMoribond").value;
+  const obsolete = document.getElementById("couleurObsolete").value;
+  const style = document.documentElement.style;
+  style.setProperty('--couleur-actif', actif);
+  style.setProperty('--couleur-moribond', moribond);
+  style.setProperty('--couleur-obsolete', obsolete);
+  localStorage.setItem("couleurActif", actif);
+  localStorage.setItem("couleurMoribond", moribond);
+  localStorage.setItem("couleurObsolete", obsolete);
+  document.querySelectorAll('.statut-actif').forEach(el => el.style.backgroundColor = actif);
+  document.querySelectorAll('.statut-moribond').forEach(el => el.style.backgroundColor = moribond);
+  document.querySelectorAll('.statut-obsolète').forEach(el => el.style.backgroundColor = obsolete);
+}
+
+function resetFiltres() {
+  document.getElementById("filtreTexte").value = "";
+  document.getElementById("filtreStatut").value = "";
+  document.getElementById("filtreActif").innerText = "Aucun filtre actif";
+  document.getElementById("filtreActuelMemoire").innerText = "Aucun filtre actif";
+  listerMemoire();
+}
+function envoyerCommandeARCH() {
+  const commande = document.getElementById('commande-input').value;
+  fetch("http://localhost:5000/analyser_commande", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ commande: commande })
+  })
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById("commande-resultat").innerText = data.retour || "Aucune réponse.";
+  })
+  .catch(() => {
+    document.getElementById("commande-resultat").innerText = "Erreur de communication avec ARCH.";
+  });
+}
+function lireTiddler() {
+  const tiddler = document.getElementById("nomTiddler").value.trim();
+  if (!tiddler) {
+    document.getElementById("resultatLecture").innerText = "Aucun tiddler précisé.";
+    return;
+  }
+
+  fetch("http://localhost:5000/extraire_et_nettoyer", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ titre: tiddler })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.texte) {
+      document.getElementById("resultatLecture").innerText = data.texte;
+    } else {
+      document.getElementById("resultatLecture").innerText = data.erreur || "Erreur inconnue.";
+    }
+  })
+  .catch(() => {
+    document.getElementById("resultatLecture").innerText = "Erreur lors de la requête à ARCH.";
+  });
+}
+
+function afficherMatrice(titreFiche, bouton) {
+  fetch(`/memoire/fiche/${titreFiche}`)
+    .then(r => r.json())
+    .then(details => {
+      const zone = document.createElement("div");
+      zone.innerHTML = "<h4 style='margin-top:10px;'>Matrice cognitive</h4>";
+      zone.appendChild(construireTableauMatrice(details.matrice_cognitive || []));
+      bouton.parentNode.appendChild(zone);
+      bouton.disabled = true; // désactive le bouton après affichage
+    });
+}
+
+
+function analyserTiddler() {
+  const contenu = document.getElementById("resultatLecture").innerText.trim();
+  if (!contenu) {
+    document.getElementById("resultatLecture").innerText = "Aucun texte à analyser.";
+    return;
+  }
+
+  fetch("http://localhost:5000/analyser_tiddler", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ texte: contenu })
+  })
+  .then(response => response.json())
+  .then(data => {
+    const message =
+      "🧠 Analyse simulée :\n\n" +
+      "Résumé :\n" + data.résumé + "\n\n" +
+      "Longueur : " + data.longueur + "\n" +
+      "Note : " + data.note;
+
+    document.getElementById("resultatLecture").innerText = message;
+  })
+  .catch(() => {
+    document.getElementById("resultatLecture").innerText = "Erreur d'analyse simulée.";
+  });
+}
+function toggleBandeau() {
+  const bandeau = document.getElementById("bandeau");
+  const contenu = document.getElementById("contenu");
+  const bouton = document.getElementById("boutonReapparaitre");
+
+  if (bandeau.style.display === "none") {
+    bandeau.style.display = "block";
+    contenu.style.marginLeft = "240px";
+    bouton.style.display = "none";
+  } else {
+    bandeau.style.display = "none";
+    contenu.style.marginLeft = "20px";
+    bouton.style.display = "inline-block"; // ✅ toujours visible quand caché
+  }
+}
+
+function genererTiddlerJSON() {
+  const titre = document.getElementById("titreTiddler").value.trim();
+  const texte = document.getElementById("texteTiddler").value.trim();
+  if (!titre || !texte) {
+    alert("Remplis le titre et le texte !");
+    return;
+  }
+
+  fetch("/generer_tiddler_json", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ titre, texte })
+  })
+  .then(response => response.json())
+  .then(data => {
+    document.getElementById("resultatJSON").textContent = "✅ Tiddler créé : " + data.fichier;
+  })
+  .catch(error => {
+    document.getElementById("resultatJSON").textContent = "Erreur : " + error;
+  });
+}
+function afficherCheminHeuristique() {
+  fetch("http://localhost:5000/arch/chemin_heuristique")
+    .then(res => res.json())
+    .then(data => {
+      let affichage = "🧭 Chemin heuristique détecté :\n\n";
+      data.forEach(etape => {
+        affichage += "🔹 Étape : " + etape.étape.tag + " (" + etape.étape.action + ")\n";
+        etape.blocs.forEach(bloc => {
+          affichage += "   • " + (bloc.titre || "Sans titre") + " — " + bloc._fichier + "\n";
+        });
+        affichage += "\n";
+      });
+      alert(affichage);
+    })
+    .catch(() => alert("Erreur lors de la récupération du chemin heuristique."));
+}
+
+function afficherPromptHeuristique() {
+  fetch("http://localhost:5000/arch/prompt_heuristique")
+    .then(res => res.json())
+    .then(data => {
+      if (data.prompt) {
+        document.getElementById("zonePrompt").style.display = "block";
+        document.getElementById("textePrompt").value = data.prompt;
+      } else if (data.erreur) {
+        alert("❌ Erreur BBGPT :\n\n" + data.erreur);
+      } else {
+        alert("❓ Réponse inattendue.");
+      }
+    })
+    .catch(() => {
+      alert("Erreur lors de la récupération du prompt BBGPT.");
+    });
+}
+
+
+
+function lancerPhase() {
+  const phase = document.getElementById("selectPhase").value;
+  fetch("http://localhost:5000/arch/lancer_phase", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ phase })
+  })
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById("etatPhase").innerText = data.etat.derniere_action || "Phase lancée.";
+    })
+    .catch(() => {
+      document.getElementById("etatPhase").innerText = "Erreur lors du lancement de la phase.";
+    });
+}
+function suggérerTags() {
+  const texte = document.getElementById("texteFiche").value;
+  fetch("http://localhost:5000/arch/suggérer_tags", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ texte: texte })
+  })
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById("tagsSuggérés").innerText = "💡 Tags suggérés : " + data.tags.join(", ");
+  })
+  .catch(() => {
+    alert("Erreur lors de la suggestion de tags.");
+  });
+}
+
+function sauvegarderFicheARCH() {
+  const bouton = document.getElementById("btnEnregistrer"); 
+  bouton.disabled = true;
+  bouton.innerText = "⏳ Enregistrement...";
+  const reference = document.getElementById("referenceInput").value.trim();
+  const texte = document.getElementById("texteFiche").value.trim();
+  const tags = document.getElementById("tagsManuels").value.split(",").map(t => t.trim()).filter(t => t);
+
+ fetch("http://localhost:5000/arch/sauvegarder_fiche", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ reference, texte, tags })
+})
+
+.then(response => response.json())
+.then(data => {
+  if (data.matrice && data.matrice.length > 0) {
+    const tableau = document.getElementById("contenuMatrice");
+    tableau.innerHTML = "";  // reset
+    data.matrice.forEach((frag, index) => {
+      const ligne = document.createElement("tr");
+
+      const cellule = (valeur) => `<td>${valeur && valeur !== "" ? valeur : "–"}</td>`;
+
+      ligne.innerHTML =
+        cellule("F" + String(index + 1).padStart(3, '0')) +
+        cellule(frag.fragment) +
+        cellule((frag.tags_lexicaux || []).join(", ")) +
+        cellule((frag.noms_propres || []).join(", ")) +
+        cellule((frag.verbes || []).join(", ")) +
+        cellule(frag.structurelle || "–") +
+        cellule(frag.conceptuelle || "–") +
+        cellule(frag.referentielle || "–") +
+        cellule(frag.vitale || "–") +
+        cellule(data.tag_manuels_fiche || "–");
+
+      tableau.appendChild(ligne);
+    });
+
+        // ✅ Réactivation du bouton après succès
+           bouton.disabled = false;
+           bouton.innerText = "💾 Enregistrer";
+
+    document.getElementById("tableauMatrice").style.display = "block";
+    chargerCarnet();  // Recharge le carnet dès que la fiche est enregistrée
+  }
+})
+.catch(error => {
+  console.error("Erreur lors de la sauvegarde de fiche :", error);
+  bouton.disabled = false;
+  bouton.innerText = "💾 Enregistrer";
+});
+}
+
+function chargerCarnet() {
+  const baseURL = window.location.origin;
+
+  fetch(baseURL + "/memoire/lister")
+    .then(response => response.json())
+    .then(data => {
+      const zone = document.getElementById("zoneCarnet");
+      zone.innerHTML = "";
+
+      // ✅ Nouveau filtrage : accepte les titres horodatés à la seconde
+      data = data.filter(fiche => /^FICHE_ARCH_\d{8}_\d{6}/.test(fiche.title || ""));
+
+      // ✅ Tri chronologique basé sur timestamp YYYYMMDD_HHMMSS (nouveau format)
+      data.sort((a, b) => {
+        const aTime = (a.title || "").match(/\d{8}_\d{6}/);
+        const bTime = (b.title || "").match(/\d{8}_\d{6}/);
+        return (aTime && bTime) ? aTime[0].localeCompare(bTime[0]) : 0;
+      });
+
+      // ✅ Affichage de toutes les fiches
+      data.forEach(fiche => {
+        const contenu = fiche.text || fiche.texte || "(aucun contenu)";
+        const bloc = document.createElement("div");
+        bloc.className = "fiche-carnet";
+     const bouton = document.createElement("button");
+bouton.textContent = "🧠 Voir matrice";
+bouton.className = "bouton-matrice";
+bouton.onclick = () => afficherMatrice(fiche.title, bouton);
+
+bloc.innerHTML = `
+  <div style="padding:10px; border-top:1px solid #ccc;">
+    <div><b>${fiche.title || "Sans titre"}</b> <span style="color:gray; font-size:12px;">(${fiche.nom})</span></div>
+    <div style="margin-top:5px;">${contenu}</div>
+    <div style="font-size:12px; color:#888; margin-top:5px;">
+      Statut : ${fiche.statut || "?"} – Vitalité : ${fiche.vitalité || "?"}
+    </div>
+    <div style="margin-top:5px;">
+      ${
+        Array.isArray(fiche.tags) && fiche.tags.length > 0
+          ? fiche.tags
+              .map(
+                tag =>
+                  `<span style="display:inline-block; background:#000; color:#FFD700; padding:2px 6px; margin:2px 4px 0 0; border-radius:5px; font-size:12px;">${tag}</span>`
+              )
+              .join("")
+          : `<span style="font-size:12px; color:#888;">aucun tag</span>`
+      }
+    </div>
+  </div>
+`;
+
+bloc.appendChild(bouton); // on ajoute le bouton après le bloc HTML
+
+        zone.appendChild(bloc);
+      });
+
+      zone.scrollTop = zone.scrollHeight;
+    })
+    .catch(error => {
+      console.error("Erreur de chargement du carnet :", error);
+    });
+}
+window.onload = function () {
+  verifierEtatServeur();
+  chargerCarnet(); // nouvelle fonction appelée au lancement
+};
+function genererTrame() {
+  const intention = document.getElementById('intentionTrame').value.trim();
+  if (!intention) return;
+
+  const date = new Date().toISOString();
+  const id = "TRAME_ARCH_" + date.replace(/[:\-T.]/g, '').slice(0, 14);
+
+  const blocs = [
+    "FICHE_ARCH_20250610_0931",
+    "FICHE_ARCH_20250611_1123",
+    "FICHE_ARCH_20250611_1835"
+  ];
+
+  const container = document.createElement('div');
+  container.className = "bloc-trame";
+  container.style.border = "1px solid #888";
+  container.style.borderRadius = "8px";
+  container.style.padding = "10px";
+  container.style.marginTop = "15px";
+  container.style.background = "#f9f9f9";
+
+  container.innerHTML = `
+    <h4>🧵 Nouvelle Trame Heuristique</h4>
+    <p><strong>ID :</strong> ${id}</p>
+    <p><strong>Intention :</strong> ${intention}</p>
+    <p><strong>Date :</strong> ${date}</p>
+    <p><strong>Blocs sélectionnés :</strong></p>
+    <ul>${blocs.map(b => `<li>${b}</li>`).join('')}</ul>
+    <p><em>Prête pour interprétation par BBGPT…</em></p>
+    <button onclick="interpreterTrame('${id}', '${intention}')">🧠 Interpréter</button>
+  `;
+
+  const zone = document.getElementById('zoneCarnet');
+ zone.appendChild(container); // ✅ ajout en bas
+ zone.scrollTop = zone.scrollHeight;
+
+  // Nettoyage du champ
+  document.getElementById('intentionTrame').value = '';
+
+  // 📤 Sauvegarde de la trame côté serveur
+  const trame = {
+    type: "trame_arch",
+    id: id,
+    intention: intention,
+    date: date,
+    blocs: blocs,
+    interpretation: {
+      mode: "non_interprété",
+      résultat: null
+    },
+    statut: "active"
+  };
+
+  fetch("http://localhost:5000/arch/sauvegarder_trame", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(trame)
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log("✅ Trame enregistrée :", data.message);
+  })
+  .catch(error => {
+    console.error("❌ Erreur de sauvegarde de la trame :", error);
+  });
+}
+
+function interpreterTrame(id, intention) {
+  const prompt = `BBGPT, interprète la Trame suivante selon l'intention : "${intention}".\n\nBlocs associés :\n- FICHE_ARCH_20250610_0931\n- FICHE_ARCH_20250611_1123\n- FICHE_ARCH_20250611_1835\n\nBut : produire une synthèse claire.`;
+
+  fetch("http://localhost:5000/arch/interpreter_trame", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, prompt })
+  })
+  .then(response => response.json())
+  .then(data => {
+    // 🔍 Trouver le bloc correspondant à cette Trame
+    const blocsTrame = document.querySelectorAll(".bloc-trame");
+    blocsTrame.forEach(bloc => {
+      const contenu = bloc.innerText || "";
+      if (contenu.includes(id)) {
+        const interpretation = document.createElement("div");
+        interpretation.style.marginTop = "10px";
+        interpretation.style.padding = "10px";
+        interpretation.style.background = "#e8f5e9";
+        interpretation.style.border = "1px solid #4caf50";
+        interpretation.innerHTML = `<strong>🧠 Interprétation BBGPT :</strong><br>${data.resultat}`;
+        bloc.appendChild(interpretation);
+      }
+    });
+  })
+  .catch(error => {
+    alert("Erreur d'interprétation : " + error);
+  });
+}
+
+
+function listerMemoire() {
+  fetch("http://localhost:5000/memoire/lister")
+    .then(response => response.json())
+    .then(data => {
+      const table = document.getElementById("tableMemoire");
+      const tbody = table.querySelector("tbody");
+      tbody.innerHTML = "";
+
+      table.style.display = "table"; // ✅ on affiche le tableau
+
+      data.forEach(fiche => {
+        const tr = document.createElement("tr");
+
+        const tdNom = document.createElement("td");
+        tdNom.textContent = fiche.nom || "";
+        tr.appendChild(tdNom);
+
+        const tdStatut = document.createElement("td");
+        tdStatut.textContent = fiche.statut || "";
+        tdStatut.className = "statut-" + (fiche.statut || "inconnu");
+        tr.appendChild(tdStatut);
+
+        const tdVitalite = document.createElement("td");
+        tdVitalite.textContent = fiche.vitalité || "";
+        tr.appendChild(tdVitalite);
+
+        const tdTags = document.createElement("td");
+        tdTags.innerHTML =
+          (fiche.tags || []).map(t => `<span class="tag-manuel">${t}</span>`).join(" ") +
+          (fiche.tags_systeme || []).map(t => `<span class="tag-systeme">${t}</span>`).join(" ");
+        tr.appendChild(tdTags);
+
+        const tdTexte = document.createElement("td");
+        tdTexte.textContent = (fiche.texte || "").slice(0, 100) + "...";
+        tr.appendChild(tdTexte);
+
+        tbody.appendChild(tr);
+      });
+    })
+    .catch(error => {
+      console.error("Erreur lors de l'affichage mémoire :"+ error);
+    });
+}
+
+
+function testerBalisesAvance() {
+  const texte = document.getElementById("texteTestBalises").value.trim();
+  if (!texte) {
+    document.getElementById("résultatBalisesAvance").innerText = "⚠️ Aucun texte saisi.";
+    return;
+  }
+
+  fetch("http://localhost:5000/balises/tester", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ texte: texte })
+  })
+  .then(response => response.json())
+  .then(data => {
+    document.getElementById("résultatBalisesAvance").innerText = JSON.stringify(data, null, 2);
+  })
+  .catch(error => {
+    console.error("Erreur lors de l'appel au backend :", error);
+    document.getElementById("résultatBalisesAvance").innerText = "❌ Erreur de communication avec le serveur.";
+  });
+}
+
+function construireTableauMatrice(matrice) {
+  const table = document.createElement("table");
+  table.className = "table-matrice";
+
+  const enTete = document.createElement("tr");
+  ["ID", "Fragment", "tags_lexicaux", "noms_propres", "verbes", "🟠 struct.", "🔵 concept.", "🟣 réf.", "🔴 vitale", "tags_manuels_fiche"].forEach(titre => {
+    const th = document.createElement("th");
+    th.textContent = titre;
+    enTete.appendChild(th);
+  });
+  table.appendChild(enTete);
+
+  matrice.forEach(frag => {
+    const ligne = document.createElement("tr");
+    const cellule = (valeur) => `<td>${valeur && valeur !== "" ? valeur : "–"}</td>`;
+    ligne.innerHTML =
+      cellule(frag.id) +
+      cellule(frag.fragment) +
+      cellule((frag.tags_lexicaux || []).join(", ")) +
+      cellule((frag.noms_propres || []).join(", ")) +
+      cellule((frag.verbes || []).join(", ")) +
+      cellule((frag.structurelle || []).join(", ")) +
+      cellule((frag.conceptuelle || []).join(", ")) +
+      cellule((frag.referentielle || frag.référentielle || []).join(", ")) +  // gestion accents
+      cellule((frag.vitale || []).join(", ")) +
+      cellule((frag.tag_manuels_fiche || []).join(", "));
+    table.appendChild(ligne);
+  });
+
+  return table;
+}
+
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const boutonEnregistrer = document.getElementById("btn-enregistrer-fiche");
+
+    if (boutonEnregistrer) {
+      boutonEnregistrer.addEventListener("click", function (event) {
+        // On désactive immédiatement après le premier clic
+        boutonEnregistrer.disabled = true;
+        boutonEnregistrer.textContent = "⏳ Enregistrement...";
+        setTimeout(() => {
+          boutonEnregistrer.disabled = false;
+          boutonEnregistrer.textContent = "Enregistrer une fiche";
+        }, 10000); // Réactivation après 10 secondes pour sécurité
+      });
+    }
+  });
+
+
+
+
+
+</script>
+<script>
+console.log("Script tension chargé !");
+
+document.getElementById("btnDetecterTension").addEventListener("click", () => {
+  const checkboxes = document.querySelectorAll(".fiche-checkbox:checked");
+  const nomsFichiers = Array.from(checkboxes).map(cb => cb.value);
+
+  if (nomsFichiers.length === 0) {
+    alert("Aucune fiche sélectionnée !");
+    return;
+  }
+
+  fetch("/arch/detecter_tension_fiches", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ noms_fichiers: nomsFichiers })
+  })
+  .then(response => response.text())
+  .then(txt => {
+    console.log("Réponse brute du serveur :", txt);
+    let data;
+    try {
+      data = JSON.parse(txt);
+    } catch (e) {
+      alert("Erreur de parsing JSON côté client !\nRéponse brute :\n" + txt);
+      return;
+    }
+
+    if (data.erreur) {
+      alert("Erreur : " + data.erreur);
+    } else {
+      alert(
+        `Analyse sur ${data.fragments} fragments.\n` +
+        `Tensions : ${data.tensions.join(", ") || "Aucune"}\n` +
+        `Contradictions : ${data.nb_contradictions}`
+      );
+    }
+  })
+  .catch(error => {
+    console.error("❌ Erreur réseau :", error);
+    alert("Erreur réseau !");
+  });
+});
+
+
+
+console.log("Script tension chargé !");
+
+// 1. Chargement dynamique des fiches depuis le backend
+function chargerFichesARCH() {
+  fetch("/memoire/lister")
+    .then(response => response.json())
+    .then(data => {
+      const conteneur = document.getElementById("liste-fiches");
+      conteneur.innerHTML = "";
+
+      if (!data || data.length === 0) {
+        conteneur.innerHTML = "❌ Aucune fiche disponible.";
+        return;
+      }
+
+      data.forEach(nomFiche => {
+        const label = document.createElement("label");
+        label.innerHTML = `
+          <input type="checkbox" class="fiche-checkbox" value="${nomFiche}">
+          ${nomFiche}
+        `;
+        conteneur.appendChild(label);
+        conteneur.appendChild(document.createElement("br"));
+      });
+    })
+    .catch(error => {
+      console.error("Erreur lors du chargement des fiches :", error);
+      document.getElementById("liste-fiches").innerText = "⚠️ Erreur lors du chargement.";
+    });
+}
+
+// 2. Déclencher le chargement dès que la page est prête
+window.addEventListener("DOMContentLoaded", chargerFichesARCH);
+</script>
+
+</body></html>
